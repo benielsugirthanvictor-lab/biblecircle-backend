@@ -3,7 +3,6 @@ const { GoogleGenAI } = require('@google/genai');
 const admin = require('firebase-admin');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { YoutubeTranscript } = require('youtube-transcript');
 const cron = require('node-cron');
 const express = require('express');
 const cors = require('cors');
@@ -191,6 +190,7 @@ app.post('/api/quiz/generate', async (req, res) => {
 
     try {
         console.log(`Extracting transcript for ${url}...`);
+        const { YoutubeTranscript } = await import('youtube-transcript');
         const transcriptItems = await YoutubeTranscript.fetchTranscript(url);
         
         // Grab the actual video title by using a simple oEmbed lookup
