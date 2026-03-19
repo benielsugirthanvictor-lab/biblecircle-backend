@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const admin = require('firebase-admin');
 const axios = require('axios');
 const cheerio = require('cheerio');
@@ -24,7 +24,7 @@ try {
 }
 
 // 2. Initialize Gemini API
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // The URL of the CFC Sunday Message 
 const CFC_MESSAGE_URL = "https://www.cfcindia.com/sunday-meetings"; // Adjust if they have a specific transcript page
@@ -66,15 +66,13 @@ async function generateQuizFromText(text) {
     `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
         });
         
-        const jsonText = response.text;
+        const jsonText = result.response.text();
         const questionsArray = JSON.parse(jsonText);
         return questionsArray;
     } catch (error) {
@@ -218,16 +216,14 @@ app.post('/api/quiz/generate', async (req, res) => {
         ${fullText}
         `;
 
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-        const response = await ai.models.generateContent({
-            model: 'gemini-1.5-flash',
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-            }
+        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
         });
         
-        const jsonText = response.text.replace(/```json/g, '').replace(/```/g, '');
+        let jsonText = result.response.text();
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
         const questionsArray = JSON.parse(jsonText);
         
         res.status(200).json({ title: title, questions: questionsArray });
