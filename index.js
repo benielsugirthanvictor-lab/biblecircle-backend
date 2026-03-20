@@ -188,8 +188,22 @@ app.post('/api/quiz/generate', async (req, res) => {
 
     try {
         console.log(`Extracting transcript for ${url}...`);
-        const { YoutubeTranscript } = await import('youtube-transcript');
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(url);
+        
+        let videoId = "";
+        try {
+            if (url.includes("v=")) {
+                videoId = url.split("v=")[1].substring(0, 11);
+            } else if (url.includes("youtu.be/")) {
+                videoId = url.split("youtu.be/")[1].substring(0, 11);
+            }
+        } catch(e) {}
+        
+        if (!videoId) {
+            return res.status(400).json({ error: "Invalid YouTube URL format." });
+        }
+
+        const { getSubtitles } = require('youtube-captions-scraper');
+        const transcriptItems = await getSubtitles({ videoID: videoId });
         
         // Grab the actual video title by using a simple oEmbed lookup
         let title = "Generated Bible Quiz";
