@@ -180,46 +180,17 @@ app.post('/api/users', async (req, res) => {
 // 5. Dynamic YouTube Quiz Generator
 // ------------------------------------------------------------------
 app.post('/api/quiz/generate', async (req, res) => {
-    const { url, quantity } = req.body;
+    const { text, quantity } = req.body;
 
-    if (!url || !quantity) {
-        return res.status(400).json({ error: "Missing url or quantity" });
+    if (!text || !quantity) {
+        return res.status(400).json({ error: "Missing text or quantity from Android app" });
     }
 
     try {
-        console.log(`Extracting transcript for ${url}...`);
-        
-        let videoId = "";
-        try {
-            if (url.includes("v=")) {
-                videoId = url.split("v=")[1].substring(0, 11);
-            } else if (url.includes("youtu.be/")) {
-                videoId = url.split("youtu.be/")[1].substring(0, 11);
-            }
-        } catch(e) {}
-        
-        if (!videoId) {
-            return res.status(400).json({ error: "Invalid YouTube URL format." });
-        }
-
-        const { getSubtitles } = require('youtube-captions-scraper');
-        const transcriptItems = await getSubtitles({ videoID: videoId });
-        
-        // Grab the actual video title by using a simple oEmbed lookup
-        let title = "Generated Bible Quiz";
-        try {
-            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
-            const oembedRes = await axios.get(oembedUrl);
-            if (oembedRes.data && oembedRes.data.title) {
-                title = oembedRes.data.title;
-            }
-        } catch(e) { console.log('Could not fetch title via oembed'); }
-
-        const fullText = transcriptItems.map(t => t.text).join(' ');
-        
         console.log(`Generating ${quantity} questions using Gemini...`);
+        const title = "Generated Bible Quiz"; // The android app can parse title later if needed
         const prompt = `
-        You are a Bible study teacher. Read the following YouTube video transcript and generate exactly ${quantity} multiple-choice questions based on it. 
+        You are a Bible study teacher. Read the following video transcript and generate exactly ${quantity} multiple-choice questions based on it. 
         Format the output strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
         Each object must have:
         - a 'question' (string)
@@ -227,7 +198,7 @@ app.post('/api/quiz/generate', async (req, res) => {
         - a 'correctIndex' (integer 0-3 representing the correct option)
         
         Transcript:
-        ${fullText}
+        ${text}
         `;
 
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
