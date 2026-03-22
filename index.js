@@ -180,26 +180,15 @@ app.post('/api/users', async (req, res) => {
 // 5. Dynamic YouTube Quiz Generator
 // ------------------------------------------------------------------
 app.post('/api/quiz/generate', async (req, res) => {
-    const { url, quantity } = req.body;
+    const { text, quantity } = req.body;
 
-    if (!url || !quantity) {
-        return res.status(400).json({ error: "Missing YouTube URL or quantity" });
+    if (!text || !quantity) {
+        return res.status(400).json({ error: "Missing transcript text or quantity from Android app" });
     }
 
     try {
-        console.log(`Generating ${quantity} questions for URL: ${url}`);
-        
-        let transcriptList = [];
-        try {
-            const { YoutubeTranscript } = require('youtube-transcript');
-            transcriptList = await YoutubeTranscript.fetchTranscript(url);
-        } catch (e) {
-            console.error("Transcript Fetch Error:", e.message);
-            return res.status(400).json({ error: "No Subtitles Found: This video has disabled or empty subtitles! Please try another video." });
-        }
-        
-        const rawText = transcriptList.map(t => t.text).join(' ').substring(0, 30000);
-        const title = "Generated Bible Quiz";
+        console.log(`Generating ${quantity} questions using Gemini...`);
+        const title = "Generated Bible Quiz"; // Formatted by the client implicitly
         const prompt = `
         You are a Bible study teacher. Read the following video transcript and generate exactly ${quantity} multiple-choice questions based on it. 
         Format the output strictly as a JSON array of objects. Do not include any markdown formatting like \`\`\`json.
@@ -209,7 +198,7 @@ app.post('/api/quiz/generate', async (req, res) => {
         - a 'correctIndex' (integer 0-3 representing the correct option)
         
         Transcript:
-        ${rawText}
+        ${text}
         `;
 
         const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
