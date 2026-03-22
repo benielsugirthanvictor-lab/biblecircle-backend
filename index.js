@@ -201,10 +201,19 @@ app.post('/api/quiz/generate', async (req, res) => {
         ${text}
         `;
 
-        const model = ai.getGenerativeModel({ model: "gemini-pro" });
-        const result = await model.generateContent(prompt);
+        const axios = require('axios');
+        const apiKey = process.env.GEMINI_API_KEY;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
         
-        let jsonText = result.response.text();
+        const payload = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }]
+        };
+
+        const response = await axios.post(geminiUrl, payload, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        let jsonText = response.data.candidates[0].content.parts[0].text;
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
         const questionsArray = JSON.parse(jsonText);
         
