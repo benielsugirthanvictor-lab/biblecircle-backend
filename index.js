@@ -201,10 +201,8 @@ app.post('/api/quiz/generate', async (req, res) => {
         ${text}
         `;
 
-        const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }]
-        });
+        const model = ai.getGenerativeModel({ model: "gemini-pro" });
+        const result = await model.generateContent(prompt);
         
         let jsonText = result.response.text();
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
