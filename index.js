@@ -35,14 +35,14 @@ async function fetchLatestMessageText() {
         // Note: Realistically, if they just post a video/audio, we cannot 'scrape' the text. 
         // We might need to look for a "Transcript" link, or another section of the site that posts articles.
         // For this demo, we will pretend we scraped a transcript.
-        
+
         const response = await axios.get(CFC_MESSAGE_URL);
         const $ = cheerio.load(response.data);
-        
+
         // Example scraping logic (will need to be tuned to the actual CFC HTML structure)
         // const title = $('h1.sermon-title').text();
         // const bodyText = $('div.sermon-transcript').text();
-        
+
         const dummyScrapedText = "God is love. Noah built an ark. David defeated Goliath with a stone. Jesus was born in Bethlehem and had 12 disciples. Creation took 6 days.";
         return dummyScrapedText;
     } catch (error) {
@@ -71,7 +71,7 @@ async function generateQuizFromText(text) {
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: { responseMimeType: "application/json" }
         });
-        
+
         const jsonText = result.response.text();
         const questionsArray = JSON.parse(jsonText);
         return questionsArray;
@@ -83,14 +83,14 @@ async function generateQuizFromText(text) {
 
 async function uploadQuizToFirebase(questionsArray) {
     if (!questionsArray || questionsArray.length === 0) return;
-    
+
     console.log("Uploading generated quiz to Firebase Realtime Database...");
     const db = admin.database();
-    
+
     // Save to a specific date node (e.g., /quizzes/2026-03-08)
     const today = new Date().toISOString().split('T')[0];
     const quizRef = db.ref(`quizzes/${today}`);
-    
+
     // Also update the 'latest' node so the Android app always pulls the newest one
     const latestRef = db.ref('quizzes/latest');
 
@@ -143,7 +143,7 @@ app.post('/api/users', async (req, res) => {
 
     try {
         console.log(`Received login details for: ${name}`);
-        
+
         // 1. Create a JSON representation of the user
         const userProfile = {
             uid: uid,
@@ -154,12 +154,12 @@ app.post('/api/users', async (req, res) => {
         };
 
         const fileContent = JSON.stringify(userProfile, null, 2);
-        
+
         // 2. Upload directly to Firebase Cloud Storage bucket
         const bucket = admin.storage().bucket();
         const safeName = name.replace(/[^a-z0-9]/gi, '_'); // sanitize name
         const remoteFilePath = `users/${safeName}.json`;
-        
+
         const file = bucket.file(remoteFilePath);
         await file.save(fileContent, {
             metadata: {
@@ -202,8 +202,8 @@ app.post('/api/quiz/generate', async (req, res) => {
         `;
 
         const axios = require('axios');
-        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
-        
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
         const payload = {
             contents: [
                 {
@@ -215,16 +215,16 @@ app.post('/api/quiz/generate', async (req, res) => {
         };
 
         const response = await axios.post(url, payload, {
-            headers: { 
+            headers: {
                 'Content-Type': 'application/json',
                 'x-goog-api-key': process.env.GEMINI_API_KEY
             }
         });
-        
+
         let jsonText = response.data.candidates[0].content.parts[0].text;
         jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
         const questionsArray = JSON.parse(jsonText);
-        
+
         res.status(200).json({ title: title, questions: questionsArray });
     } catch (error) {
         console.error("Error generating quiz:", error.message);
