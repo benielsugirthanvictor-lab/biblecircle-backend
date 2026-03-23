@@ -202,7 +202,7 @@ app.post('/api/quiz/generate', async (req, res) => {
         `;
 
         const axios = require('axios');
-        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-03-25:generateContent';
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent';
         
         const payload = {
             contents: [
