@@ -232,6 +232,60 @@ app.post('/api/quiz/generate', async (req, res) => {
     }
 });
 
+// ------------------------------------------------------------------
+// 6. Ask the Bible AI Chat
+// ------------------------------------------------------------------
+app.post('/api/chat/ask', async (req, res) => {
+    const { question } = req.body;
+
+    if (!question) {
+        return res.status(400).json({ error: "Missing question" });
+    }
+
+    try {
+        console.log(`Asking Gemini: ${question}`);
+        const prompt = `
+        You are a warm, encouraging, and knowledgeable Bible study assistant. 
+        A user asks: "${question}"
+
+        Provide a response that includes:
+        1. A compassionate and encouraging reflection addressing their specific situation.
+        2. Exactly 2-3 highly relevant Bible verses that offer comfort, guidance, or truth regarding their question. Quote the verse text and provide the reference.
+        
+        Format the output strictly as a JSON object with the following keys:
+        - "reflection": A string containing your warm response (1-2 paragraphs).
+        - "verses": An array of objects, where each object has:
+            - "reference": The Bible book, chapter, and verse (e.g., "John 11:35")
+            - "text": The actual text of the verse.
+            
+        Do NOT include markdown formatting like \`\`\`json. Output raw JSON only.
+        `;
+
+        const axios = require('axios');
+        const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+
+        const payload = {
+            contents: [{ parts: [{ text: prompt }] }]
+        };
+
+        const response = await axios.post(url, payload, {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': process.env.GEMINI_API_KEY
+            }
+        });
+
+        let jsonText = response.data.candidates[0].content.parts[0].text;
+        jsonText = jsonText.replace(/```json/g, '').replace(/```/g, '');
+        const chatResponse = JSON.parse(jsonText);
+
+        res.status(200).json(chatResponse);
+    } catch (error) {
+        console.error("Error generating chat response:", error.message);
+        res.status(500).json({ error: "Failed to generate chat response: " + error.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Node.js server listening on port ${PORT}`);
